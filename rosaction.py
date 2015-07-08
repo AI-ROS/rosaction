@@ -4,14 +4,37 @@
 """ROS action client."""
 
 import yaml
+import roslib
 import rosgraph
 import rostopic
+import actionlib
 
 __author__ = "Anass Al-Wohoush"
 
 
+def get_action_class(action):
+    """Gets the corresponding ROS action class.
+
+    Args:
+        action: ROS action name.
+
+    Returns:
+        Action message class. None if not found.
+    """
+    goal_msg_type = rostopic.get_topic_type("{}/goal".format(action))[0]
+
+    # Verify goal message was found.
+    if not goal_msg_type:
+        return None
+
+    # Goal message name is the same as the action message name + 'Goal'.
+    action_msg_type = goal_msg_type[:-4]
+
+    return roslib.message.get_message_class(action_msg_type)
+
+
 def get_goal_type(action):
-    """Gets the ROS action goal type.
+    """Gets the corresponding ROS action goal type.
 
     Args:
         action: ROS action name.
@@ -24,7 +47,7 @@ def get_goal_type(action):
 
 
 def get_goal_class(action):
-    """Gets the ROS action goal message class.
+    """Gets the corresponding ROS action goal message class.
 
     Args:
         action: ROS action name.
@@ -37,7 +60,7 @@ def get_goal_class(action):
 
 
 def get_feedback_type(action):
-    """Gets the ROS action feedback type.
+    """Gets the corresponding ROS action feedback type.
 
     Args:
         action: ROS action name.
@@ -50,7 +73,7 @@ def get_feedback_type(action):
 
 
 def get_feedback_class(action):
-    """Gets the ROS action feedback message class.
+    """Gets the corresponding ROS action feedback message class.
 
     Args:
         action: ROS action name.
@@ -63,7 +86,7 @@ def get_feedback_class(action):
 
 
 def get_result_type(action):
-    """Gets the ROS action result type.
+    """Gets the corresponding ROS action result type.
 
     Args:
         action: ROS action name.
@@ -76,7 +99,7 @@ def get_result_type(action):
 
 
 def get_result_class(action):
-    """Gets the ROS action result message class.
+    """Gets the corresponding ROS action result message class.
 
     Args:
         action: ROS action name.
@@ -129,6 +152,21 @@ def create_goal_from_yaml(action, msg):
     goal_cls, _ = get_goal_class(action)
     msg_dict = yaml.load(msg)
     return goal_cls(**msg_dict)
+
+
+def create_action_client(action):
+    """Creates corresponding ROS action client.
+
+    Args:
+        action: ROS action name.
+
+    Returns:
+        Corresponding actionlib.SimpleActionClient instance.
+        None if action server not found.
+    """
+    action_cls = get_action_class(action)
+    client = actionlib.SimpleActionClient(action, action_cls)
+    return client
 
 
 if __name__ == "__main__":
