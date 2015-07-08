@@ -3,6 +3,7 @@
 
 """ROS action client."""
 
+import yaml
 import rosgraph
 import rostopic
 
@@ -113,6 +114,21 @@ def get_action_list():
     actions.sort()
 
     return actions
+
+
+def create_goal_from_yaml(action, msg):
+    """Constructs goal from YAML encoded string.
+
+    Args:
+        action: ROS action name.
+        msg: YAML encoded message.
+
+    Returns:
+        ROS action goal instance.
+    """
+    goal_cls, _ = get_goal_class(action)
+    msg_dict = yaml.load(msg)
+    return goal_cls(**msg_dict)
 
 
 if __name__ == "__main__":
