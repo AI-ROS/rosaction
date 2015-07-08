@@ -3,6 +3,7 @@
 
 """ROS action client."""
 
+import rosgraph
 import rostopic
 
 __author__ = "Anass Al-Wohoush"
@@ -84,3 +85,36 @@ def get_result_class(action):
         (None, None) if not found.
     """
     return rostopic.get_topic_class("{}/result".format(action))[:2]
+
+
+def get_action_list():
+    """Gets list of registered ROS actions.
+
+    Returns:
+        List of ROS action names.
+    """
+    master = rosgraph.Master("/rosaction")
+
+    # Get list of subscriptions from ROS master.
+    _, subscriptions, _ = master.getSystemState()
+
+    # Separate topic names from node names.
+    registered_topics, _ = zip(*subscriptions)
+
+    # All actions must have both '/goal' and '/cancel' topics.
+    actions = [
+        topic[:-5]  # Strip '/goal' from end of topic name.
+        for topic in registered_topics
+        if topic.endswith("/goal") and
+        topic.replace("/goal", "/cancel") in registered_topics
+    ]
+
+    # Sort list for printing convenience.
+    actions.sort()
+
+    return actions
+
+
+if __name__ == "__main__":
+    for action in get_action_list():
+        print(action)
