@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(tritech_micron)
+project(rosaction)
 
 find_package(catkin REQUIRED COMPONENTS
   rospy
@@ -7,10 +7,10 @@ find_package(catkin REQUIRED COMPONENTS
 
 catkin_python_setup()
 
-catkin_install_python(PROGRAMS scripts/rosaction
-  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
-
 catkin_package(
   CATKIN_DEPENDS
   rospy
 )
+
+catkin_install_python(PROGRAMS scripts/rosaction
+                      DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
