@@ -1,13 +1,15 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 """ROS action client."""
 
 import yaml
 import roslib
+import StringIO
 import rosgraph
 import rostopic
 import actionlib
+from actionlib_msgs.msg import GoalStatus
+
 
 __author__ = "Anass Al-Wohoush"
 
@@ -40,10 +42,12 @@ def get_goal_type(action):
         action: ROS action name.
 
     Returns:
-        Tuple of (goal message type, goal topic name).
-        (None, None) if not found.
+        Goal message type. None if not found.
     """
-    return rostopic.get_topic_type("{}/goal".format(action))[:2]
+    msg_type = rostopic.get_topic_type("{}/goal".format(action))[0]
+
+    # Replace 'ActionGoal' with 'Goal'.
+    return msg_type[:-10] + "Goal"
 
 
 def get_goal_class(action):
@@ -53,10 +57,15 @@ def get_goal_class(action):
         action: ROS action name.
 
     Returns:
-        Tuple of (goal message class, goal topic name).
-        (None, None) if not found.
+        Goal message class. None if not found.
     """
-    return rostopic.get_topic_class("{}/goal".format(action))[:2]
+    msg_type = get_goal_type(action)
+
+    # Verify message type was found.
+    if not msg_type:
+        return None
+
+    return roslib.message.get_message_class(msg_type)
 
 
 def get_feedback_type(action):
@@ -66,10 +75,12 @@ def get_feedback_type(action):
         action: ROS action name.
 
     Returns:
-        Tuple of (feedback message type, feedback topic name).
-        (None, None) if not found.
+        Feedback message type. None not found.
     """
-    return rostopic.get_topic_type("{}/feedback".format(action))[:2]
+    msg_type = rostopic.get_topic_type("{}/feedback".format(action))[0]
+
+    # Replace 'ActionFeedback' with 'Feedback'.
+    return msg_type[:-14] + "Feedback"
 
 
 def get_feedback_class(action):
@@ -79,11 +90,15 @@ def get_feedback_class(action):
         action: ROS action name.
 
     Returns:
-        Tuple of (feedback message class, feedback topic name).
-        (None, None) if not found.
+        Feedback message class. None not found.
     """
-    return rostopic.get_topic_class("{}/feedback".format(action))[:2]
+    msg_type = get_feedback_type(action)
 
+    # Verify message type was found.
+    if not msg_type:
+        return None
+
+    return roslib.message.get_message_class(msg_type)
 
 def get_result_type(action):
     """Gets the corresponding ROS action result type.
@@ -92,10 +107,12 @@ def get_result_type(action):
         action: ROS action name.
 
     Returns:
-        Tuple of (result message type, result topic name).
-        (None, None) if not found.
+        Result message type. None if not found.
     """
-    return rostopic.get_topic_type("{}/result".format(action))[:2]
+    msg_type = rostopic.get_topic_type("{}/result".format(action))[0]
+
+    # Replace 'ActionResult' with 'Result'.
+    return msg_type[:-12] + "Result"
 
 
 def get_result_class(action):
@@ -105,10 +122,15 @@ def get_result_class(action):
         action: ROS action name.
 
     Returns:
-        Tuple of (result message class, result topic name).
-        (None, None) if not found.
+        Result message class. None if not found.
     """
-    return rostopic.get_topic_class("{}/result".format(action))[:2]
+    msg_type = get_result_type(action)
+
+    # Verify message type was found.
+    if not msg_type:
+        return None
+
+    return roslib.message.get_message_class(msg_type)
 
 
 def get_action_list():
@@ -149,9 +171,17 @@ def create_goal_from_yaml(action, msg):
     Returns:
         ROS action goal instance.
     """
-    goal_cls, _ = get_goal_class(action)
+    # Initialize message.
+    goal_cls = get_goal_class(action)
+    goal_msg = goal_cls()
+
+    # Load message dictionary from YAML encoded string.
     msg_dict = yaml.load(msg)
-    return goal_cls(**msg_dict)
+
+    # Fill message arguments.
+    roslib.message.fill_message_args(goal_msg, [msg_dict])
+
+    return goal_msg
 
 
 def create_action_client(action):
@@ -169,6 +199,25 @@ def create_action_client(action):
     return client
 
 
-if __name__ == "__main__":
-    for action in get_action_list():
-        print(action)
+def stringify_status(status):
+    """Returns human-readable format of ROS action status enumeration.
+
+    Args:
+        status: GoalStatus enumeration.
+
+    Returns:
+        Human-readable string.
+    """
+    enum = {
+        GoalStatus.PENDING: "PENDING",
+        GoalStatus.ACTIVE: "ACTIVE",
+        GoalStatus.PREEMPTED: "PREEMPTED",
+        GoalStatus.SUCCEEDED: "SUCCEEDED",
+        GoalStatus.ABORTED: "ABORTED",
+        GoalStatus.REJECTED: "REJECTED",
+        GoalStatus.PREEMPTING: "PREEMPTING",
+        GoalStatus.RECALLING: "RECALLING",
+        GoalStatus.RECALLED: "RECALLED",
+        GoalStatus.LOST: "LOST"
+    }
+    return enum[status]
