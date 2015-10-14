@@ -64,6 +64,7 @@ def print_result(status, result):
     """Prints ROS action result.
 
     Args:
+        status: ROS action status.
         result: ROS action result.
     """
     print(rosaction.stringify_status(status))
